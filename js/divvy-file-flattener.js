@@ -4,6 +4,8 @@ var stationFilesRead = 0;
 var trips = {};
 var tripFilesRead = 0;
 
+var combined = {};
+
 function loadFiles() {
   loadStations();
   loadTrips();
@@ -33,7 +35,7 @@ function loadStations() {
               stations.sort(function(a, b) {
                 return a.id - b.id;
               });
-              downloadObjectAsCSV(stations, "divvy_stations");
+              downloadStringAsCSV(makeCSV(stations), "divvy_stations");
             }
           },
           false
@@ -76,13 +78,32 @@ function loadTrips() {
   }
 }
 
-function flattenData() {}
+function flattenData() {
+  const deleteFields = [];//["trip_id", "start_time", "end_time", "bikeid", "from_station_name", "to_station_name", "usertype", "birthyear", "gender"];
 
-function downloadObjectAsCSV(exportObj, exportName) {
-  var dataStr = "data:text/csv;charset=utf-8,";
+  trips = trips.map(obj => {
+    let fromStation = stations.find(o => o.id === obj.from_station_id);
+    let toStation = stations.find(o => o.id === obj.to_station_id);
+
+    obj["from_station_latitude"] = fromStation.latitude;
+    obj["from_station_longitude"] = fromStation.longitude;
+    obj["to_station_latitude"] = toStation.latitude;
+    obj["to_station_longitude"] = toStation.longitude;
+
+    for (var i = 0; i < deleteFields.length; i++) {
+      delete obj[deleteFields[i]];
+    }
+
+    return obj;
+  });
+  downloadStringAsCSV(makeCSV(trips), "divvy_trips");
+}
+
+function makeCSV(objToConvert) {
+  var dataStr = "";
 
   const array =
-    typeof exportObj !== "object" ? JSON.parse(exportObj) : exportObj;
+    typeof objToConvert !== "object" ? JSON.parse(objToConvert) : objToConvert;
   let str =
     `${Object.keys(array[0])
       .map(value => `"${value}"`)
@@ -96,10 +117,10 @@ function downloadObjectAsCSV(exportObj, exportName) {
     return str;
   }, str);
 
-  var downloadAnchorNode = document.createElement("a");
-  downloadAnchorNode.setAttribute("href", dataStr);
-  downloadAnchorNode.setAttribute("download", exportName + ".csv");
-  document.body.appendChild(downloadAnchorNode); // required for firefox
-  downloadAnchorNode.click();
-  downloadAnchorNode.remove();
+  return dataStr;
+}
+
+function downloadStringAsCSV(CSVstring, exportName) {
+  var blob = new Blob([CSVstring], { type: "text/csv;charset=utf-8" });
+  saveAs(blob, exportName + ".csv");
 }
