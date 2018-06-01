@@ -79,7 +79,7 @@ function loadTrips() {
 }
 
 function flattenData() {
-  const deleteFields = [];//["trip_id", "start_time", "end_time", "bikeid", "from_station_name", "to_station_name", "usertype", "birthyear", "gender"];
+  const deleteFields = ["trip_id", "start_time", "end_time", "from_station_name", "to_station_name", "from_station_id", "to_station_id"];
 
   trips = trips.map(obj => {
     let fromStation = stations.find(o => o.id === obj.from_station_id);
